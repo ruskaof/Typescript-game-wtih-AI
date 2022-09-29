@@ -1,32 +1,35 @@
 import { KeysPressed } from "./logic/KeysPressed";
-import { Player } from "./logic/Player";
+import { Player } from "./logic/entity/Player";
+import { Constants } from "./logic/Constants";
 
 const canvas = <HTMLCanvasElement>document.getElementById("game");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 const ctx = canvas.getContext("2d");
 
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
 const player = new Player();
 const keysPressed = new KeysPressed();
 
 function animate() {
     requestAnimationFrame(animate);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    player.update(ctx, canvas.height);
 
-    if (keysPressed.right) {
-        player.velocity.x += 5;
-    } else if (keysPressed.left) {
-        player.velocity.x -= 5;
-    } else {
-        player.velocity.x = 0;
-    }
-
-    if (keysPressed.up) {
-        player.velocity.y -= 5;
-    }
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    player.draw(ctx, canvas.width, canvas.height);
 }
 animate();
+
+function update() {
+    player.update(keysPressed);
+
+    setTimeout(() => {
+        update();
+    }, 1000 / Constants.TICKRATE);
+}
+update();
 
 window.addEventListener("keydown", ({ key }) => {
     switch (key) {
