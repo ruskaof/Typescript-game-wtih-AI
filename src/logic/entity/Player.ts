@@ -1,15 +1,18 @@
 import { Constants } from "../Constants";
-import { Drawabale } from "./Drawable";
-import { Updatable } from "./Updatable";
 import { Vector } from "../Vector";
 import { heigthToCanvas, widthToCanvas } from "../scaleSizeToCanvas";
 import { KeysPressed } from "../KeysPressed";
+import { Entity } from "./Entity";
+import { Direction } from "../Direction";
+import { Bullet } from "./Bullet";
 
-export class Player implements Drawabale, Updatable {
+export class Player implements Entity {
     width = 0.025;
     height = 0.025;
     position: Vector = new Vector(0.5, 0.5);
     velocity: Vector = new Vector(0, 0);
+    lastBulletShootTimeMills = performance.now();
+    direction = Direction.RIGHT;
 
     draw(
         ctx: CanvasRenderingContext2D,
@@ -26,7 +29,10 @@ export class Player implements Drawabale, Updatable {
         ctx.fillRect(canvasX, canvasY, canvasPlayerWidth, canvasPlayerHeigth);
     }
 
-    update(keysPressed: KeysPressed) {
+    update(keysPressed: KeysPressed, worldEntities: Set<Entity>) {
+        if (this.velocity.x > 0) this.direction = Direction.RIGHT;
+        if (this.velocity.x < 0) this.direction = Direction.LEFT;
+
         this.position.y += this.velocity.y;
         this.position.x += this.velocity.x;
 
@@ -47,25 +53,44 @@ export class Player implements Drawabale, Updatable {
             this.velocity.y = 0;
         }
 
-        // if (this.position.y + this.height < 1) {
-        //     this.velocity.y += Constants.GRAVITY;
-        // } else {
-        //     this.velocity.y = 0;
-        // }
         this.velocity.y += Constants.GRAVITY;
 
         if (keysPressed.right) {
-            this.velocity.x += 0.001;
+            this.velocity.x = 0.015;
         } else if (keysPressed.left) {
-            this.velocity.x -= 0.001;
+            this.velocity.x = -0.015;
         } else {
             this.velocity.x = 0;
         }
 
-        if (keysPressed.up && this.velocity.y >= 0) {
+        if (keysPressed.up && this.isOnGround()) {
             this.velocity.y = -Constants.GRAVITY * 10;
         }
 
-        console.log(`${this.velocity.y}`);
+        if (keysPressed.space) {
+            if (performance.now() - this.lastBulletShootTimeMills >= 500) {
+                this.shoot(worldEntities);
+                this.lastBulletShootTimeMills = performance.now();
+            }
+        }
+    }
+
+    private shoot(worldEntities: Set<Entity>) {
+        let bulletVelocity: Vector;
+        if (this.direction == Direction.RIGHT) {
+            bulletVelocity = new Vector(0.01, 0);
+        } else {
+            bulletVelocity = new Vector(-0.01, 0);
+        }
+        worldEntities.add(
+            new Bullet(
+                new Vector(this.position.x, this.position.y),
+                bulletVelocity
+            )
+        );
+    }
+
+    private isOnGround(): boolean {
+        return this.position.y + this.height >= 1;
     }
 }

@@ -1,6 +1,7 @@
 import { KeysPressed } from "./logic/KeysPressed";
 import { Player } from "./logic/entity/Player";
 import { Constants } from "./logic/Constants";
+import { Entity } from "./logic/entity/Entity";
 
 const canvas = <HTMLCanvasElement>document.getElementById("game");
 canvas.width = window.innerWidth;
@@ -12,18 +13,25 @@ canvas.height = window.innerHeight;
 
 const player = new Player();
 const keysPressed = new KeysPressed();
+const worldEntities = new Set<Entity>();
+worldEntities.add(player);
 
 function animate() {
     requestAnimationFrame(animate);
 
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    player.draw(ctx, canvas.width, canvas.height);
+
+    worldEntities.forEach((entity) => {
+        entity.draw(ctx, canvas.width, canvas.height);
+    });
 }
 animate();
 
 function update() {
-    player.update(keysPressed);
+    worldEntities.forEach((entity) => {
+        entity.update(keysPressed, worldEntities);
+    });
 
     setTimeout(() => {
         update();
@@ -49,6 +57,10 @@ window.addEventListener("keydown", ({ key }) => {
             keysPressed.down = true;
             break;
         }
+        case " ": {
+            keysPressed.space = true;
+            break;
+        }
     }
 });
 
@@ -68,6 +80,10 @@ window.addEventListener("keyup", ({ key }) => {
         }
         case "s": {
             keysPressed.down = false;
+            break;
+        }
+        case " ": {
+            keysPressed.space = false;
             break;
         }
     }

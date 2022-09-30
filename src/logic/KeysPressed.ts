@@ -3,4 +3,5 @@ export class KeysPressed {
     down = false;
     right = false;
     left = false;
+    space = false;
 }
