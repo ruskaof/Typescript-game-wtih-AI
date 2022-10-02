@@ -5,21 +5,48 @@ import { KeysPressed } from "../KeysPressed";
 import { Entity } from "./Entity";
 import { Direction } from "../Direction";
 import { Bullet } from "./Bullet";
+import { WorldEntitiesKeeper } from "./WorldEntities";
+import { rectanglesCollide } from "../collision";
+import { Rectangular } from "../Rectangular";
 
-export class Player implements Entity {
-    width = 0.025;
-    height = 0.025;
-    position: Vector = new Vector(0.5, 0.5);
-    velocity: Vector = new Vector(0, 0);
-    lastBulletShootTimeMills = performance.now();
-    direction = Direction.RIGHT;
+export class Player implements Entity, Rectangular {
+    private width = 0.025;
+    private height = 0.025;
+    private position: Vector;
+    private velocity: Vector = new Vector(0, 0);
+    private lastBulletShootTimeMills = performance.now();
+    private direction = Direction.RIGHT;
+    private playerId: 1 | 2;
+    private color = "red";
+
+    constructor(playerId: 1 | 2) {
+        this.playerId = playerId;
+        if (playerId == 1) {
+            this.position = new Vector(0.1, 1 - this.height - 0.1);
+        } else {
+            this.position = new Vector(
+                1 - this.width - 0.1,
+                1 - this.height - 0.1
+            );
+        }
+    }
+
+    getWidth(): number {
+        return this.width;
+    }
+    getHeigth(): number {
+        return this.height;
+    }
+    getPosition(): Vector {
+        return this.position;
+    }
 
     draw(
         ctx: CanvasRenderingContext2D,
         canvasWidth: number,
         canvasHeigth: number
     ) {
-        ctx.fillStyle = "red";
+        ctx.fillStyle = this.color;
 
         const canvasX = widthToCanvas(this.position.x, canvasWidth);
         const canvasY = heigthToCanvas(this.position.y, canvasHeigth);
@@ -29,7 +56,17 @@ export class Player implements Entity {
         ctx.fillRect(canvasX, canvasY, canvasPlayerWidth, canvasPlayerHeigth);
     }
 
-    update(keysPressed: KeysPressed, worldEntities: Set<Entity>) {
+    update(
+        keysPressedP1: KeysPressed,
+        keysPressedP2: KeysPressed,
+        worldEntities: WorldEntitiesKeeper
+    ) {
+        let keysPressed: KeysPressed;
+        if (this.playerId == 1) {
+            keysPressed = keysPressedP1;
+        } else {
+            keysPressed = keysPressedP2;
+        }
         if (this.velocity.x > 0) this.direction = Direction.RIGHT;
         if (this.velocity.x < 0) this.direction = Direction.LEFT;
 
@@ -56,41 +93,55 @@ export class Player implements Entity {
         this.velocity.y += Constants.GRAVITY;
 
         if (keysPressed.right) {
-            this.velocity.x = 0.015;
+            this.velocity.x = Constants.PLAYER_VELOCITY;
         } else if (keysPressed.left) {
-            this.velocity.x = -0.015;
+            this.velocity.x = -Constants.PLAYER_VELOCITY;
         } else {
             this.velocity.x = 0;
         }
 
         if (keysPressed.up && this.isOnGround()) {
-            this.velocity.y = -Constants.GRAVITY * 10;
+            this.velocity.y = -Constants.JUMP_VELOCITY;
         }
 
-        if (keysPressed.space) {
+        if (keysPressed.shoot) {
             if (performance.now() - this.lastBulletShootTimeMills >= 500) {
                 this.shoot(worldEntities);
                 this.lastBulletShootTimeMills = performance.now();
             }
         }
+
+        this.handleBulletHit(worldEntities);
     }
 
-    private shoot(worldEntities: Set<Entity>) {
+    private shoot(worldEntities: WorldEntitiesKeeper) {
         let bulletVelocity: Vector;
         if (this.direction == Direction.RIGHT) {
-            bulletVelocity = new Vector(0.01, 0);
+            bulletVelocity = new Vector(Constants.BULLET_VELOCITY, 0);
         } else {
-            bulletVelocity = new Vector(-0.01, 0);
+            bulletVelocity = new Vector(-Constants.BULLET_VELOCITY, 0);
         }
-        worldEntities.add(
+        worldEntities.addBullet(
             new Bullet(
                 new Vector(this.position.x, this.position.y),
-                bulletVelocity
+                bulletVelocity,
+                this.playerId
             )
         );
     }
 
     private isOnGround(): boolean {
         return this.position.y + this.height >= 1;
+    }
+
+    private handleBulletHit(worldEntities: WorldEntitiesKeeper) {
+        worldEntities.bullets.forEach((bullet) => {
+            if (
+                rectanglesCollide(this, bullet) &&
+                bullet.ownerId != this.playerId
+            ) {
+                this.color = "green";
+            }
+        });
     }
 }

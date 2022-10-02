@@ -1,4 +1,5 @@
 import { KeysPressed } from "../KeysPressed";
+import { WorldEntitiesKeeper } from "./WorldEntities";
 
 export interface Entity {
     draw(
@@ -7,5 +8,9 @@ export interface Entity {
         canvasHeigth: number
     ): void;
 
-    update(keysPressed: KeysPressed, worldEntities: Set<Entity>): void;
+    update(
+        keysPressedP1: KeysPressed,
+        keysPressedP2: KeysPressed,
+        worldEntities: WorldEntitiesKeeper
+    ): void;
 }
