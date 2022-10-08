@@ -18,6 +18,7 @@ export class Player implements Entity, Rectangular {
     private direction = Direction.RIGHT;
     private playerId: 1 | 2;
     private color = "red";
+    isDead = false;
 
     constructor(playerId: 1 | 2) {
         this.playerId = playerId;
@@ -141,6 +142,7 @@ export class Player implements Entity, Rectangular {
                 bullet.ownerId != this.playerId
             ) {
                 this.color = "green";
+                this.isDead = true;
             }
         });
     }
